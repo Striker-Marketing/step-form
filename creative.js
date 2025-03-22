@@ -1,5 +1,14 @@
 const handleCreativeForm = () => {
   const fieldWrappers = document.querySelectorAll(".input-wrapper");
+  window.addEventListener("beforeunload", (event) => {
+    event.preventDefault();
+    event.returnValue = "";
+  });
+  document.querySelector("form").addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+    }
+  });
 
   const turnInvalid = (input) => {
     input.style.backgroundColor = "#fff2f4";
@@ -10,11 +19,6 @@ const handleCreativeForm = () => {
     message.style.maxHeight = "15px";
     message.style.marginTop = "8px";
   };
-
-  const steps = document.querySelectorAll("form-step");
-  let currentStep = 0;
-  const nextStepButton = document.querySelector(".step-button.next");
-  const prevStepButton = document.querySelector(".step-button.prev");
 
   phoneField = document.querySelector("[name='phone_number']");
   if (phoneField) {
@@ -60,7 +64,7 @@ const handleCreativeForm = () => {
     const otherInput = other.querySelector("input");
     inputs.forEach((input) => {
       input.addEventListener("change", () => {
-        if (input.value === "Other") {
+        if (input.value === "Other" || input.value === "yes") {
           other.style.maxHeight = "20rem";
           other.style.marginTop = window.innerWidth < 768 ? "30px" : "45px";
           otherInput.setAttribute("required", "required");
@@ -77,6 +81,35 @@ const handleCreativeForm = () => {
     });
   };
 
+  const checkInputValidity = (input) => {
+    const errorMessage =
+      input.type === "tel"
+        ? input.parentElement.parentElement.querySelector(".error-message")
+        : input.parentElement.querySelector(".error-message");
+    const emptyMessage =
+      input.type === "tel"
+        ? input.parentElement.parentElement.querySelector(".empty-message")
+        : input.parentElement.querySelector(".empty-message");
+    if (input.required && input.value.trim() === "") {
+      turnInvalid(input);
+      showMessage(emptyMessage);
+      return false;
+    }
+    if (
+      input.required &&
+      (!input.checkValidity() ||
+        (input.name === "phone_number" && !iti.isValidNumber()))
+    ) {
+      turnInvalid(input);
+      if (emptyMessage) emptyMessage.style = "";
+      showMessage(errorMessage);
+      return false;
+    }
+    if (emptyMessage) emptyMessage.style = "";
+    if (errorMessage) errorMessage.style = "";
+    return true;
+  };
+
   const handleInputValidity = (wrapper) => {
     if (wrapper.classList.contains("radio-wrapper")) {
       handleRadioWrapper(wrapper);
@@ -90,26 +123,8 @@ const handleCreativeForm = () => {
       parent.style.overflow = "hidden";
     }
     if (!input) return;
-    const errorMessage = wrapper.querySelector(".error-message");
-    const emptyMessage = wrapper.querySelector(".empty-message");
     input.addEventListener("blur", () => {
-      if (input.required && input.value.trim() === "") {
-        turnInvalid(input);
-        showMessage(emptyMessage);
-        return;
-      }
-      if (
-        input.required &&
-        (!input.checkValidity() ||
-          (input.name === "phone_number" && !iti.isValidNumber()))
-      ) {
-        turnInvalid(input);
-        if (emptyMessage) emptyMessage.style = "";
-        showMessage(errorMessage);
-      } else {
-        if (emptyMessage) emptyMessage.style = "";
-        if (errorMessage) errorMessage.style = "";
-      }
+      checkInputValidity(input);
     });
     input.addEventListener("focus", () => {
       input.style = "";
@@ -119,5 +134,86 @@ const handleCreativeForm = () => {
   fieldWrappers.forEach((wrapper) => {
     handleInputValidity(wrapper);
   });
+
+  const addActive = (array) => {
+    array.forEach((item) => {
+      item.classList.remove("active");
+    });
+    array[0].classList.add("active");
+  };
+  const steps = document.querySelectorAll(".form-step");
+  const titleSteps = document.querySelectorAll(".step-title");
+  const listSteps = document.querySelectorAll(".step-list");
+  let currentStep = 0;
+  const nextStepButton = document.querySelector(".step-button.next");
+  const prevStepButton = document.querySelector(".step-button.prev");
+
+  if (nextStepButton) {
+    addActive(steps);
+    addActive(titleSteps);
+    listSteps.forEach((step) => step.classList.remove("active"));
+    const checkStepValidity = () => {
+      const step = steps[currentStep];
+      const inputs = step.querySelectorAll("input[required]");
+      let stepIsValid = true;
+      let hasScrolled = false;
+      inputs.forEach((input) => {
+        const isValid = checkInputValidity(input);
+        if (!isValid) {
+          stepIsValid = false;
+          if (!hasScrolled) {
+            hasScrolled = true;
+            window.scrollTo({
+              top: input.getBoundingClientRect().top + window.pageYOffset - 100,
+              behavior: "smooth",
+            });
+          }
+        }
+      });
+      return stepIsValid;
+    };
+
+    const handleNextStep = () => {
+      const isValid = checkStepValidity();
+      if (isValid) {
+        steps[currentStep].classList.remove("active");
+        titleSteps[currentStep].classList.remove("active");
+        listSteps[currentStep - 4]?.classList.remove("active");
+        currentStep++;
+        steps[currentStep].classList.add("active");
+        titleSteps[currentStep].classList.add("active");
+        listSteps[currentStep - 4]?.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        prevStepButton.style.display = "flex";
+      }
+      if (currentStep === steps.length) {
+        document.querySelector(".steps-wrapper").style.display = "none";
+      }
+    };
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        handleNextStep();
+      }
+    });
+
+    nextStepButton.addEventListener("click", () => {
+      handleNextStep();
+    });
+    prevStepButton.addEventListener("click", () => {
+      if (currentStep > 0) {
+        steps[currentStep].classList.remove("active");
+        titleSteps[currentStep].classList.remove("active");
+        listSteps[currentStep - 4]?.classList.remove("active");
+        currentStep--;
+        steps[currentStep].classList.add("active");
+        titleSteps[currentStep].classList.add("active");
+        listSteps[currentStep - 4]?.classList.add("active");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        document.querySelector(".steps-wrapper").style.display = "block";
+      }
+      if (currentStep === 0) prevStepButton.style.display = "none";
+    });
+  }
 };
 handleCreativeForm();
