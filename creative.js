@@ -6,6 +6,9 @@ const handleCreativeForm = () => {
   });
   document.querySelector("form").addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
+      if (event.target.tagName === "TEXTAREA" && !e.shiftKey) {
+        return;
+      }
       event.preventDefault();
     }
   });
@@ -20,31 +23,22 @@ const handleCreativeForm = () => {
     message.style.marginTop = "8px";
   };
 
-  phoneField = document.querySelector("[name='phone_number']");
-  if (phoneField) {
-    const cookieConfig = `path=/; domain=${((d) =>
-      d.match(/\.([a-z]{2,})\.([a-z]{2,})$/)
-        ? `.${RegExp.$1}.${RegExp.$2}`
-        : d)(window.location.hostname)}; max-age=3600`;
-    phoneNumberIsNotValid = () => !iti.isValidNumber();
-
-    iti = window.intlTelInput(phoneField, {
-      utilsScript:
-        "https://cdn.jsdelivr.net/npm/intl-tel-input@23.3.2/build/js/utils.js",
+  phoneFields = document.querySelectorAll("[type='tel']");
+  const cookieConfig = `path=/; domain=${((d) => (d.match(/\.([a-z]{2,})\.([a-z]{2,})$/) ? `.${RegExp.$1}.${RegExp.$2}` : d))(window.location.hostname)}; max-age=3600`;
+  const itiObj = {}
+  phoneFields.forEach((phoneField) => {
+    const iti = window.intlTelInput(phoneField, {
+      utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.3.2/build/js/utils.js",
       autoPlaceholder: "aggressive",
       initialCountry: "auto",
       geoIpLookup: async (success, failure) => {
         try {
-          const cookieCountry = document.cookie
-            .split("user_country=")[1]
-            ?.split(";")[0];
+          const cookieCountry = document.cookie.split("user_country=")[1]?.split(";")[0];
           if (cookieCountry) {
             success(cookieCountry);
             return;
           }
-          const response = await fetch(
-            "https://get.geojs.io/v1/ip/country.json"
-          );
+          const response = await fetch("https://get.geojs.io/v1/ip/country.json");
           const data = await response.json();
           if (response.ok) {
             document.cookie = `user_country=${data.country};${cookieConfig}`;
@@ -56,7 +50,8 @@ const handleCreativeForm = () => {
         }
       },
     });
-  }
+    itiObj[phoneField.name] = iti;
+  });
 
   const handleRadioWrapper = (wrapper) => {
     const inputs = wrapper.querySelectorAll("input");
@@ -66,7 +61,7 @@ const handleCreativeForm = () => {
       input.addEventListener("change", () => {
         if (input.value === "Other" || input.value === "yes") {
           other.style.maxHeight = "20rem";
-          other.style.marginTop = window.innerWidth < 768 ? "30px" : "45px";
+          other.style.marginTop = window.innerWidth < 768 ? "30px" : "30px";
           otherInput.setAttribute("required", "required");
           setTimeout(() => {
             other.style.overflow = "unset";
@@ -82,24 +77,14 @@ const handleCreativeForm = () => {
   };
 
   const checkInputValidity = (input) => {
-    const errorMessage =
-      input.type === "tel"
-        ? input.parentElement.parentElement.querySelector(".error-message")
-        : input.parentElement.querySelector(".error-message");
-    const emptyMessage =
-      input.type === "tel"
-        ? input.parentElement.parentElement.querySelector(".empty-message")
-        : input.parentElement.querySelector(".empty-message");
+    const errorMessage = input.type === "tel" ? input.parentElement.parentElement.querySelector(".error-message") : input.parentElement.querySelector(".error-message");
+    const emptyMessage = input.type === "tel" ? input.parentElement.parentElement.querySelector(".empty-message") : input.parentElement.querySelector(".empty-message");
     if (input.required && input.value.trim() === "") {
       turnInvalid(input);
       showMessage(emptyMessage);
       return false;
     }
-    if (
-      input.required &&
-      (!input.checkValidity() ||
-        (input.name === "phone_number" && !iti.isValidNumber()))
-    ) {
+    if (input.required && (!input.checkValidity() || (input.type === "tel" && !itiObj[input.name].isValidNumber()))) {
       turnInvalid(input);
       if (emptyMessage) emptyMessage.style = "";
       showMessage(errorMessage);
@@ -145,8 +130,8 @@ const handleCreativeForm = () => {
   const titleSteps = document.querySelectorAll(".step-title");
   const listSteps = document.querySelectorAll(".step-list");
   let currentStep = 0;
-  const nextStepButton = document.querySelector(".step-button.next");
-  const prevStepButton = document.querySelector(".step-button.prev");
+  const nextStepButton = document.querySelector(".step-button-v2.next");
+  const prevStepButton = document.querySelector(".step-button-v2.prev");
 
   if (nextStepButton) {
     addActive(steps);
@@ -186,13 +171,17 @@ const handleCreativeForm = () => {
         window.scrollTo({ top: 0, behavior: "smooth" });
         prevStepButton.style.display = "flex";
       }
-      if (currentStep === steps.length) {
-        document.querySelector(".steps-wrapper").style.display = "none";
+      if (currentStep === steps.length - 1) {
+        document.querySelector(".step-buttons-wrapper").style.display = "none";
       }
     };
 
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
+        if (e.target.tagName === "TEXTAREA" && !e.shiftKey) {
+          return;
+        }
+        e.preventDefault();
         handleNextStep();
       }
     });
@@ -210,7 +199,7 @@ const handleCreativeForm = () => {
         titleSteps[currentStep].classList.add("active");
         listSteps[currentStep - 4]?.classList.add("active");
         window.scrollTo({ top: 0, behavior: "smooth" });
-        document.querySelector(".steps-wrapper").style.display = "block";
+        document.querySelector(".step-buttons-wrapper").style.display = "flex";
       }
       if (currentStep === 0) prevStepButton.style.display = "none";
     });
