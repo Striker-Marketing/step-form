@@ -6,12 +6,20 @@ const handleCreativeForm = () => {
   });
   document.querySelector("form").addEventListener("keydown", function (event) {
     if (event.key === "Enter") {
-      if (event.target.tagName === "TEXTAREA" && !e.shiftKey) {
+      if (event.target.tagName === "TEXTAREA" && !event.shiftKey) {
         return;
       }
       event.preventDefault();
     }
   });
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const clientId = urlParams.get("client");
+  if (clientId) {
+    const urlItem = document.querySelector("[drive-link] a");
+    urlItem.setAttribute("href", `https://drive.google.com/drive/folders/${clientId}?usp=sharing`);
+    urlItem.innerHTML = `https://drive.google.com/drive/folders/${clientId}?usp=sharing`;
+  }
 
   const turnInvalid = (input) => {
     input.style.backgroundColor = "#fff2f4";
@@ -25,7 +33,7 @@ const handleCreativeForm = () => {
 
   phoneFields = document.querySelectorAll("[type='tel']");
   const cookieConfig = `path=/; domain=${((d) => (d.match(/\.([a-z]{2,})\.([a-z]{2,})$/) ? `.${RegExp.$1}.${RegExp.$2}` : d))(window.location.hostname)}; max-age=3600`;
-  const itiObj = {}
+  const itiObj = {};
   phoneFields.forEach((phoneField) => {
     const iti = window.intlTelInput(phoneField, {
       utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@23.3.2/build/js/utils.js",
@@ -56,21 +64,21 @@ const handleCreativeForm = () => {
   const handleRadioWrapper = (wrapper) => {
     const inputs = wrapper.querySelectorAll("input");
     const other = wrapper.nextElementSibling;
-    const otherInput = other.querySelector("input");
+    const otherInputs = other.querySelectorAll("input");
     inputs.forEach((input) => {
       input.addEventListener("change", () => {
-        if (input.value === "Other" || input.value === "yes") {
-          other.style.maxHeight = "20rem";
+        if ((input.value === "Other" || input.value === "yes") && !wrapper.hasAttribute("no-other")) {
+          other.style.maxHeight = "40rem";
           other.style.marginTop = window.innerWidth < 768 ? "30px" : "30px";
-          otherInput.setAttribute("required", "required");
+          otherInputs.forEach((otherInput) => otherInput.setAttribute("required", "required"));
           setTimeout(() => {
             other.style.overflow = "unset";
           }, 0.2);
-        } else {
+        } else if (!wrapper.hasAttribute("no-other")) {
           other.style.maxHeight = "0";
           other.style.marginTop = "0";
           other.style.overflow = "hidden";
-          otherInput.removeAttribute("required");
+          otherInputs.forEach((otherInput) => otherInput.removeAttribute("required"));
         }
       });
     });
@@ -134,6 +142,8 @@ const handleCreativeForm = () => {
   const prevStepButton = document.querySelector(".step-button-v2.prev");
 
   if (nextStepButton) {
+    const progressBar = document.querySelector(".progress-progress");
+    progressBar.style.width = `${(100 * (currentStep + 1)) / steps.length}%`;
     addActive(steps);
     addActive(titleSteps);
     listSteps.forEach((step) => step.classList.remove("active"));
@@ -170,9 +180,10 @@ const handleCreativeForm = () => {
         listSteps[currentStep - 4]?.classList.add("active");
         window.scrollTo({ top: 0, behavior: "smooth" });
         prevStepButton.style.display = "flex";
+        progressBar.style.width = `${(100 * (currentStep + 1)) / steps.length}%`;
       }
       if (currentStep === steps.length - 1) {
-        document.querySelector(".step-buttons-wrapper").style.display = "none";
+        nextStepButton.style.display = "none";
       }
     };
 
@@ -190,6 +201,7 @@ const handleCreativeForm = () => {
       handleNextStep();
     });
     prevStepButton.addEventListener("click", () => {
+      nextStepButton.style = "";
       if (currentStep > 0) {
         steps[currentStep].classList.remove("active");
         titleSteps[currentStep].classList.remove("active");
@@ -200,6 +212,7 @@ const handleCreativeForm = () => {
         listSteps[currentStep - 4]?.classList.add("active");
         window.scrollTo({ top: 0, behavior: "smooth" });
         document.querySelector(".step-buttons-wrapper").style.display = "flex";
+        progressBar.style.width = `${(100 * (currentStep + 1)) / steps.length}%`;
       }
       if (currentStep === 0) prevStepButton.style.display = "none";
     });
