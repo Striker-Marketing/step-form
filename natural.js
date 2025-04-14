@@ -63,6 +63,21 @@ const handleSurvey = ({ formId, locationId, captchaToken, submitFunction }) => {
     itiObj[phoneField.name] = iti;
   });
 
+  const handleUrlParams = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    ["full_name", "email"].forEach((param) => {
+      const value = urlParams.get(param);
+      if (value) {
+        document.querySelector(`input[name="${param}"]`).value = value;
+      }
+    });
+    const phoneUrlParam = urlParams.get("phone_number");
+    if(phoneUrlParam){
+      itiObj.phone_number.setNumber(phoneUrlParam);
+    }
+  };
+  handleUrlParams();
+
   const checkInputValidity = (input) => {
     const errorMessage = input.type === "tel" || input.type === "file" || input.type === "checkbox" ? input.parentElement.parentElement.querySelector(".error-message") : input.parentElement.querySelector(".error-message");
     const emptyMessage = input.type === "tel" || input.type === "file" || input.type === "checkbox" ? input.parentElement.parentElement.querySelector(".empty-message") : input.parentElement.querySelector(".empty-message");
@@ -296,7 +311,7 @@ const handleSurvey = ({ formId, locationId, captchaToken, submitFunction }) => {
     body.formId = formId;
     body.location_id = locationId;
 
-    body.full_name = document.querySelector("[name='first_name']").value;
+    body.full_name = document.querySelector("[name='full_name']").value;
     body.email = document.querySelector("[name='email']").value;
     body.phone = itiObj.phone_number.getNumber();
     body.terms_and_conditions = "I Consent to Receive SMS Notifications, Alerts & Occasional Marketing Communication from company. Message frequency varies. Message & data rates may apply. Text HELP to (XXX) XXX-XXXX for assistance. You can reply STOP to unsubscribe at any time";
