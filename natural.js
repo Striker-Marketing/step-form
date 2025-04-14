@@ -337,7 +337,7 @@ const handleSurvey = ({ formId, locationId, captchaToken, submitFunction }) => {
     body.eventData.page.title = document.title;
     formData.append("formData", JSON.stringify(body));
     formData.append("locationId", locationId);
-    formData.append("formId", formId);
+    formData.append("surveyId", formId);
 
     try {
       const token = await grecaptcha.enterprise.execute(captchaToken, { action: "submit" });
